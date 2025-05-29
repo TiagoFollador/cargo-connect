@@ -108,7 +108,7 @@ const RegisterPage = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-1 flex items-center justify-center py-12 px-4">
+      <main className="flex-1 flex items-center justify-center my-16 px-4">
         <div className="w-full max-w-md">
           <Card className="shadow-lg">
             <CardHeader className="space-y-1">

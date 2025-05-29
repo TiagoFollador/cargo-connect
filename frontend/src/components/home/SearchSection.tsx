@@ -89,7 +89,7 @@ const SearchSection = () => {
           <h3 className="text-xl font-semibold mb-6">Fretes disponíveis</h3>
           
           {filteredShipments.length === 0 ? (
-            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
+            <div className="text-center my-16 bg-white dark:bg-gray-800 rounded-lg shadow">
               <p className="text-gray-500 dark:text-gray-400">Nenhum frete encontrado com os critérios especificados.</p>
             </div>
           ) : (
