@@ -69,7 +69,7 @@ const LoginPage = () => {
       navigate('/dashboard');
     } catch (error) {
       setErrors({
-        general: 'Email ou senha inválidos. Tente john@example.com / password (remetente) ou sarah@example.com / password (transportador)',
+        general: 'Email ou senha inválidos. Tente joao@exemplo.com / senha (remetente) ou sarah@exemplo.com / senha (transportador)',
       });
       toast({
         title: 'Falha no Login',

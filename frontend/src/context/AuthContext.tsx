@@ -36,7 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Find user with matching email
         const user = Object.values(mockUsers).find(u => u.email === email);
         
-        if (user && password === 'password') { // Simple demo password check
+        if (user && password === 'senha') { // Simple demo password check
           setCurrentUser(user);
           setIsAuthenticated(true);
           localStorage.setItem('cargoConnectUser', JSON.stringify(user));
