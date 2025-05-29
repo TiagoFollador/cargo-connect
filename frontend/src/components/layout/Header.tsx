@@ -9,7 +9,8 @@ import {
   User, 
   LogOut, 
   Bell, 
-  Package 
+  Package, 
+  BellIcon
 } from 'lucide-react';
 import { 
   DropdownMenu,
@@ -63,26 +64,26 @@ const Header = () => {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-6">
           <Link to="/" className="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
-            Home
+            Início
           </Link>
           <Link to="/shipments" className="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
-            Shipments
+            Envios
           </Link>
           <Link to="/contact" className="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
-            Contact
+            Contato
           </Link>
           
           {isAuthenticated ? (
             <div className="flex items-center gap-4">
               <Link to="/dashboard">
-                <Button variant="ghost" size="sm" className="relative">
+                <Button variant="ghost" size="sm" className="relative bg-gray-200 dark:bg-gray-800">
                   <Package className="h-5 w-5 mr-1" />
                   <span>Dashboard</span>
                 </Button>
               </Link>
               
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="relative bg-gray-200 dark:bg-gray-800">
+                <BellIcon className="h-5 w-5" />
                 {currentUser && currentUser.notificationCount > 0 && (
                   <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500">
                     {currentUser.notificationCount}
@@ -100,28 +101,28 @@ const Header = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuLabel>Conta</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link to="/profile" className="cursor-pointer flex items-center">
                       <User className="mr-2 h-4 w-4" />
-                      <span>Profile</span>
+                      <span>Perfil</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={logout} className="cursor-pointer text-red-500">
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
+                    <span>Sair</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <Button asChild variant="ghost">
-                <Link to="/login">Log in</Link>
+              <Button asChild variant="ghost" className="bg-gray-200 dark:bg-gray-800">
+                <Link to="/login">Entrar</Link>
               </Button>
-              <Button asChild>
-                <Link to="/register">Sign up</Link>
+              <Button asChild className="bg-blue-600 hover:bg-blue-700">
+                <Link to="/register">Cadastrar</Link>
               </Button>
             </div>
           )}
@@ -129,13 +130,13 @@ const Header = () => {
 
         {/* Mobile Menu Button */}
         <button
-          className="md:hidden p-2 focus:outline-none"
+          className="md:hidden p-2 focus:outline-none bg-gray-200 dark:bg-gray-800 rounded-md"
           onClick={toggleMobileMenu}
         >
           {isMobileMenuOpen ? (
-            <X className="h-6 w-6 text-gray-200 dark:text-gray-200" />
+            <X className="h-6 w-6 text-gray-700 dark:text-gray-200" />
           ) : (
-            <Menu className="h-6 w-6 text-gray-200 dark:text-gray-200" />
+            <Menu className="h-6 w-6 text-gray-700 dark:text-gray-200" />
           )}
         </button>
       </div>
@@ -144,40 +145,40 @@ const Header = () => {
       {isMobileMenuOpen && (
         <div className="md:hidden bg-white dark:bg-gray-900 shadow-lg absolute top-full left-0 right-0 py-4 px-4 flex flex-col space-y-4">
           <Link to="/" className="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 font-medium py-2">
-            Home
+            Início
           </Link>
           <Link to="/shipments" className="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 font-medium py-2">
-            Shipments
+            Envios
           </Link>
           <Link to="/contact" className="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 font-medium py-2">
-            Contact
+            Contato
           </Link>
           
           {isAuthenticated ? (
             <>
               <Link to="/dashboard" className="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 font-medium py-2 flex items-center gap-2">
                 <Package className="h-5 w-5" />
-                <span>Dashboard</span>
+                <span>Painel</span>
               </Link>
               <Link to="/profile" className="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 font-medium py-2 flex items-center gap-2">
                 <User className="h-5 w-5" />
-                <span>Profile</span>
+                <span>Perfil</span>
               </Link>
               <button
                 onClick={logout}
                 className="text-red-500 hover:text-red-700 font-medium py-2 flex items-center gap-2"
               >
                 <LogOut className="h-5 w-5" />
-                <span>Log out</span>
+                <span>Sair</span>
               </button>
             </>
           ) : (
             <div className="flex flex-col space-y-2 pt-2">
-              <Button asChild variant="outline" className="w-full">
-                <Link to="/login">Log in</Link>
+              <Button asChild variant="outline" className="w-full bg-gray-200 dark:bg-gray-800">
+                <Link to="/login">Entrar</Link>
               </Button>
-              <Button asChild className="w-full">
-                <Link to="/register">Sign up</Link>
+              <Button asChild className="w-full bg-blue-600 hover:bg-blue-700">
+                <Link to="/register">Cadastrar</Link>
               </Button>
             </div>
           )}
