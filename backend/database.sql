@@ -1,3 +1,5 @@
+DROP SCHEMA IF EXISTS cargo_conect ;
+
 CREATE DATABASE IF NOT EXISTS cargo_conect;
 USE cargo_conect;
 
@@ -137,7 +139,7 @@ CREATE TABLE shipment_offers (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (shipment_id) REFERENCES shipments(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (vehicle_id) REFERENCES user_vehicles(vehicle_id),
+    FOREIGN KEY (vehicle_id) REFERENCES user_vehicles(id),
     INDEX idx_offer_status (status)
 );
 
@@ -154,7 +156,7 @@ CREATE TABLE shipment_contracts (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (shipment_id) REFERENCES shipments(id),
-    FOREIGN KEY (offer_id) REFERENCES shipment_offers(offer_id)
+    FOREIGN KEY (offer_id) REFERENCES shipment_offers(id)
 );
 
 -- shipment log
@@ -183,7 +185,7 @@ CREATE TABLE notifications (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_user_notifications (id, is_read),
-    INDEX idx_notification_type (notification_type)
+    INDEX idx_notification_type (type)
 );
 
 CREATE TABLE company_contact (
