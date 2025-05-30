@@ -5,10 +5,9 @@ import { Trip } from '../../types';
 interface TripCardProps {
   trip: Trip;
   onAccept: (tripId: string) => void;
-  onCounterOffer: (tripId: string) => void;
 }
 
-const TripCard: React.FC<TripCardProps> = ({ trip, onAccept, onCounterOffer }) => {
+const TripCard: React.FC<TripCardProps> = ({ trip, onAccept }) => {
   const formattedDate = new Date(trip.date).toLocaleDateString('pt-BR', {
     year: 'numeric',
     month: 'short',
@@ -61,23 +60,17 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onAccept, onCounterOffer }) =
       </div>
 
       {trip.status === 'available' && (
-        <div className="flex space-x-2">
+        <div>
           <button
             onClick={() => onAccept(trip.id)}
-            className="btn btn-primary flex-1"
+            className="btn btn-primary w-full"
           >
             Aceitar
-          </button>
-          <button
-            onClick={() => onCounterOffer(trip.id)}
-            className="btn btn-outline flex-1"
-          >
-            Contraproposta
           </button>
         </div>
       )}
       
-      {trip.status !== 'available' && (
+      {trip.status === 'accepted' && (
         <div>
           <button
             disabled

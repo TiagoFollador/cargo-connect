@@ -71,7 +71,19 @@ export const mockTrips: Trip[] = [
     distance: '1650 km',
     weight: '8 toneladas',
     cargo: 'Carga Geral',
-    status: 'accepted',
+    status: 'available',
+    createdAt: '2025-10-06T13:45:00Z'
+  },
+  {
+    id: '7',
+    origin: 'Manaus, AM',
+    destination: 'Belém, PA',
+    date: '2025-11-12',
+    price: 5800,
+    distance: '1650 km',
+    weight: '8 toneladas',
+    cargo: 'Carga Geral',
+    status: 'available',
     createdAt: '2025-10-06T13:45:00Z'
   }
 ];
