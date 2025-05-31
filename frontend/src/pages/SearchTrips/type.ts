@@ -1,0 +1,22 @@
+export type Trip = {
+  id: number;
+  user_id: number;
+  title: string;
+  description: string;
+  cargo_type_id: number;
+  weight_kg: number;
+  volume_m3: number | null;
+  pickup_location: string;
+  pickup_latitude: number | null;
+  pickup_longitude: number | null;
+  pickup_date: string;
+  delivery_location: string;
+  delivery_latitude: number | null;
+  delivery_longitude: number | null;
+  delivery_date: string;
+  required_vehicle_type_id: number | null;
+  price_offer: number | null;
+  status: TripStatus;
+  created_at: string;
+  updated_at: string;
+};

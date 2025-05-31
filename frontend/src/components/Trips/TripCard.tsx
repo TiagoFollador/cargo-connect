@@ -1,9 +1,10 @@
 import React from 'react';
 import { MapPin, Calendar, DollarSign, TruckIcon, Package } from 'lucide-react';
 import { Trip } from '../../types';
+import { Trip as TripSearch } from '../../pages/SearchTrips/type';
 
 interface TripCardProps {
-  trip: Trip;
+  trip: Trip | TripSearch;
   onAccept: (tripId: string) => void;
   onCounterOffer: (tripId: string) => void;
 }
