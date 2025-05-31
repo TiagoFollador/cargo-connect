@@ -23,7 +23,7 @@ export interface Trip {
   distance: string;
   weight: string;
   cargo: string;
-  status: 'available' | 'accepted' | 'in_progress' | 'completed';
+  status: 'available' | 'accepted' | 'in_progress' | 'completed' | 'counterOffer';
   createdAt: string;
   transporterId?: string;
   conductorId?: string;
