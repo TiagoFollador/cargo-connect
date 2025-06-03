@@ -1,72 +1,141 @@
-const db = require('../../db.js'); // Assuming db.js is in the backend root directory
+const db = require('../../db.js'); // Your database connection module
 
 /**
  * Creates a new vehicle type.
- * @param {object} vehicleTypeData - Data for the new vehicle type.
- * @param {string} vehicleTypeData.name - The name of the vehicle type.
- * * @param {string|null} vehicleTypeData.description - The description of the vehicle type.
- * @param {number|null} vehicleTypeData.capacity_kg - The capacity in kg.
- * @returns {Promise<object>} The created vehicle type object.
  */
-async function create(vehicleTypeData) {
-    const { name, description, capacity_kg } = vehicleTypeData;
-    const [result] = await db.query(
-        'INSERT INTO vehicle_types (name, description, capacity_kg) VALUES (?, ?, ?)',
-        [name, description, capacity_kg] // Assumes capacity_kg is already number or null
-    );
-    return { id: result.insertId, name, description, capacity_kg };
-}
+exports.createVehicleType = async (req, res) => {
+    const { name, description } = req.body;
+    let { capacity_kg } = req.body;
+
+    if (!name) {
+        return res.status(400).json({ error: 'Vehicle type name is required.' });
+    }
+    if (name.length > 50) {
+        return res.status(400).json({ error: 'Vehicle type name cannot exceed 50 characters.' });
+    }
+    if (description && description.length > 255) {
+        return res.status(400).json({ error: 'Description cannot exceed 255 characters.' });
+    }
+
+    let parsedCapacityKg = null;
+    if (capacity_kg !== undefined && capacity_kg !== null) {
+        if (isNaN(parseFloat(capacity_kg)) || (typeof capacity_kg === 'string' && !/^\d+(\.\d{1,2})?$/.test(capacity_kg))) {
+            return res.status(400).json({ error: 'Capacity_kg must be a valid decimal number with up to 2 decimal places (e.g., 1000.00) or null.' });
+        }
+        parsedCapacityKg = parseFloat(capacity_kg);
+    }
+
+    try {
+        const [result] = await db.query(
+            'INSERT INTO vehicle_types (name, description, capacity_kg) VALUES (?, ?, ?)',
+            [name, description, parsedCapacityKg]
+        );
+        res.status(201).json({ id: result.insertId, name, description, capacity_kg: parsedCapacityKg });
+    } catch (error) {
+        console.error('Failed to create vehicle type:', error);
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ error: 'Vehicle type name already exists.' });
+        }
+        res.status(500).json({ error: 'Failed to create vehicle type', details: error.message });
+    }
+};
 
 /**
  * Retrieves all vehicle types.
- * @returns {Promise<Array<object>>} A list of all vehicle types.
  */
-async function findAll() {
-    const [types] = await db.query('SELECT id, name, description, capacity_kg, created_at, updated_at FROM vehicle_types');
-    return types;
-}
+exports.getAllVehicleTypes = async (req, res) => {
+    try {
+        const [types] = await db.query('SELECT id, name, description, capacity_kg, created_at, updated_at FROM vehicle_types');
+        res.status(200).json(types); // Send the array directly
+    } catch (error) {
+        console.error('Failed to retrieve vehicle types:', error);
+        res.status(500).json({ error: 'Failed to retrieve vehicle types', details: error.message });
+    }
+};
 
 /**
- * Retrieves a single vehicle type by its ID.
- * @param {number} id - The ID of the vehicle type.
- * @returns {Promise<object|null>} The vehicle type object or null if not found.
+ * Retrieves a single vehicle type by ID.
  */
-async function findById(id) {
-    const [types] = await db.query('SELECT id, name, description, capacity_kg, created_at, updated_at FROM vehicle_types WHERE id = ?', [id]);
-    return types.length > 0 ? types[0] : null;
-}
+exports.getVehicleTypeById = async (req, res) => {
+    const parsedId = parseInt(req.params.id, 10);
+    if (isNaN(parsedId)) {
+        return res.status(400).json({ error: 'Invalid ID format. ID must be an integer.' });
+    }
+    try {
+        const [types] = await db.query('SELECT id, name, description, capacity_kg, created_at, updated_at FROM vehicle_types WHERE id = ?', [parsedId]);
+        if (types.length > 0) {
+            res.status(200).json(types[0]); // Send the object directly
+        } else {
+            res.status(404).json({ error: 'Vehicle type not found' });
+        }
+    } catch (error) {
+        console.error('Failed to retrieve vehicle type:', error);
+        res.status(500).json({ error: 'Failed to retrieve vehicle type', details: error.message });
+    }
+};
 
 /**
  * Updates an existing vehicle type.
- * @param {number} id - The ID of the vehicle type to update.
- * @param {object} dataToUpdate - An object containing the fields to update.
- * @returns {Promise<object|null>} The updated vehicle type object, or null if not found.
  */
-async function update(id, dataToUpdate) {
-    if (Object.keys(dataToUpdate).length === 0) {
-        return findById(id); // No changes, return current state if exists
+exports.updateVehicleType = async (req, res) => {
+    const parsedId = parseInt(req.params.id, 10);
+    if (isNaN(parsedId)) {
+        return res.status(400).json({ error: 'Invalid ID format. ID must be an integer.' });
     }
-    const [result] = await db.query('UPDATE vehicle_types SET ? WHERE id = ?', [dataToUpdate, id]);
-    if (result.affectedRows > 0) {
-        return findById(id); // Fetch and return the updated record
+
+    const { name, description, capacity_kg } = req.body;
+    const fieldsToUpdate = {};
+
+    if (name !== undefined) fieldsToUpdate.name = name;
+    if (description !== undefined) fieldsToUpdate.description = description;
+    if (capacity_kg !== undefined) {
+        if (capacity_kg === null) fieldsToUpdate.capacity_kg = null;
+        else if (isNaN(parseFloat(capacity_kg)) || (typeof capacity_kg === 'string' && !/^\d+(\.\d{1,2})?$/.test(capacity_kg))) {
+            return res.status(400).json({ error: 'Capacity_kg must be a valid decimal number with up to 2 decimal places (e.g., 1000.00) or null.' });
+        } else fieldsToUpdate.capacity_kg = parseFloat(capacity_kg);
     }
-    return null; // Indicates vehicle type not found for update
-}
+
+    if (Object.keys(fieldsToUpdate).length === 0) {
+        return res.status(400).json({ error: 'No fields to update provided.' });
+    }
+
+    try {
+        const [result] = await db.query('UPDATE vehicle_types SET ? WHERE id = ?', [fieldsToUpdate, parsedId]);
+        if (result.affectedRows > 0) {
+            const [updatedType] = await db.query('SELECT * FROM vehicle_types WHERE id = ?', [parsedId]);
+            res.status(200).json(updatedType[0]);
+        } else {
+            res.status(404).json({ error: 'Vehicle type not found or no new data to update' });
+        }
+    } catch (error) {
+        console.error('Failed to update vehicle type:', error);
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ error: 'Vehicle type name already exists.' });
+        }
+        res.status(500).json({ error: 'Failed to update vehicle type', details: error.message });
+    }
+};
 
 /**
  * Deletes a vehicle type by its ID.
- * @param {number} id - The ID of the vehicle type to delete.
- * @returns {Promise<number>} The number of affected rows (0 or 1).
  */
-async function remove(id) {
-    const [result] = await db.query('DELETE FROM vehicle_types WHERE id = ?', [id]);
-    return result.affectedRows;
-}
-
-module.exports = {
-    create,
-    findAll,
-    findById,
-    update,
-    remove,
+exports.deleteVehicleType = async (req, res) => {
+    const parsedId = parseInt(req.params.id, 10);
+    if (isNaN(parsedId)) {
+        return res.status(400).json({ error: 'Invalid ID format. ID must be an integer.' });
+    }
+    try {
+        const [result] = await db.query('DELETE FROM vehicle_types WHERE id = ?', [parsedId]);
+        if (result.affectedRows > 0) {
+            res.status(200).json({ message: 'Vehicle type deleted successfully' });
+        } else {
+            res.status(404).json({ error: 'Vehicle type not found' });
+        }
+    } catch (error) {
+        console.error('Failed to delete vehicle type:', error);
+        if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+            return res.status(409).json({ error: 'Cannot delete vehicle type. It is currently in use by one or more vehicles or shipments.' });
+        }
+        res.status(500).json({ error: 'Failed to delete vehicle type', details: error.message });
+    }
 };
