@@ -23,10 +23,10 @@ router.post('/', async (req, res) => {
     }
 
     try {
-        // const hashedPassword = await bcrypt.hash(password, 10); // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10); // Hash password
         const result = await db.query(
             'INSERT INTO users (email, password, name, phone, profile_picture_url) VALUES (?, ?, ?, ?, ?)',
-            [email, password, name, phone, profile_picture_url]
+            [email, hashedPassword, name, phone, profile_picture_url]
         );
         res.status(201).json({
             message: 'User created successfully',
