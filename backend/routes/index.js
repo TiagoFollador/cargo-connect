@@ -1,5 +1,5 @@
 const express = require('express');
-const userRoutes = require('./users.js');
+const userRoutes = require('./Users/UserController.js');
 const rolesRoutes = require('./roles.js');
 const vehicleTypesRoutes = require('./vehicle_types');
 

@@ -1,8 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db.js');
+const db = require('../../db.js');
 const bcrypt = require('bcrypt');
+const UserRepository = require('./UserRepository'); // Import the new repository
 
+// Create a new user
 router.post('/', async (req, res) => {
     const { email, password, name, phone, profile_picture_url, role_id } = req.body;
 
@@ -35,30 +37,30 @@ router.post('/', async (req, res) => {
         connection = await db.getConnection(); // Get a connection from the pool
         await connection.beginTransaction(); // Start a transaction
 
-        const hashedPassword = await bcrypt.hash(password, 10); // Hash password
-        const [userResult] = await connection.query( // Use connection for queries within transaction
-            'INSERT INTO users (email, password, name, phone, profile_picture_url) VALUES (?, ?, ?, ?, ?)',
-            [email, hashedPassword, name, phone, profile_picture_url || null] // Handle optional profile_picture_url
-        );
-        const userId = userResult.insertId;
+        // Check if role exists before attempting to create user (optional, but good practice)
+        const roleExists = await UserRepository.checkRoleExistsInTransaction(role_id, connection);
+        if (!roleExists) {
+            await connection.rollback();
+            return res.status(400).json({ error: `Invalid role_id: Role with id ${role_id} does not exist.` });
+        }
 
-        // Insert into user_roles table
-        await connection.query(
-            'INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)',
-            [userId, role_id]
-        );
+        const hashedPassword = await bcrypt.hash(password, 10); // Hash password
+        const userData = { email, name, phone, profile_picture_url };
+
+        const userId = await UserRepository.createUserInTransaction(userData, hashedPassword, connection);
+        await UserRepository.assignRoleInTransaction(userId, role_id, connection);
 
         await connection.commit(); // Commit the transaction
 
         res.status(201).json({
             message: 'User created and role assigned successfully.',
-            user: { 
-                id: userId, 
-                email, 
-                name, 
-                phone, 
+            user: {
+                id: userId,
+                email,
+                name,
+                phone,
                 profile_picture_url: profile_picture_url || null,
-                role_id 
+                role_id
             }
         });
     } catch (error) {
@@ -69,7 +71,8 @@ router.post('/', async (req, res) => {
         if (error.code === 'ER_DUP_ENTRY' && error.message.includes("for key 'users.email'")) {
             return res.status(409).json({ error: 'Email already exists.' });
         }
-        if (error.code === 'ER_NO_REFERENCED_ROW_2' && error.message.includes("FOREIGN KEY (`role_id`) REFERENCES `roles`")) {
+        // This specific check for role_id might be less likely if we pre-check role existence
+        if (error.code === 'ER_NO_REFERENCED_ROW_2' && error.message && error.message.includes("FOREIGN KEY (`role_id`) REFERENCES `roles`")) {
             return res.status(400).json({ error: `Invalid role_id: Role with id ${role_id} does not exist.` });
         }
         res.status(500).json({ error: 'Failed to create user or assign role.', details: error.message });
@@ -81,31 +84,14 @@ router.post('/', async (req, res) => {
 });
 
 
+// Get all users
 router.get('/', async (req, res) => {
     try {
-        const query = `
-            SELECT 
-                u.id, 
-                u.email, 
-                u.name, 
-                u.phone, 
-                u.profile_picture_url, 
-                u.rating, 
-                u.trips_completed, 
-                u.last_login, 
-                u.created_at, 
-                u.updated_at,
-                ur.role_id,
-                r.name AS role_name
-            FROM users u
-            LEFT JOIN user_roles ur ON u.id = ur.user_id
-            LEFT JOIN roles r ON ur.role_id = r.id;
-        `;
-        const [userRows] = await db.query(query);
-        return res.status(200).json({ users: userRows });
+        const users = await UserRepository.findAllUsers();
+        return res.status(200).json({ users });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to retrieve users' });
+        console.error('Failed to retrieve users:', error);
+        res.status(500).json({ error: 'Failed to retrieve users', details: error.message });
     }
 });
 
@@ -113,34 +99,15 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     const { id } = req.params;
     try {
-        const query = `
-            SELECT 
-                u.id, 
-                u.email, 
-                u.name, 
-                u.phone, 
-                u.profile_picture_url, 
-                u.rating, 
-                u.trips_completed, 
-                u.last_login, 
-                u.created_at, 
-                u.updated_at,
-                ur.role_id,
-                r.name AS role_name
-            FROM users u
-            LEFT JOIN user_roles ur ON u.id = ur.user_id
-            LEFT JOIN roles r ON ur.role_id = r.id
-            WHERE u.id = ?;
-        `;
-        const [userRows] = await db.query(query, [id]);
-        if (userRows.length > 0) {
-            res.status(200).json({ user: userRows[0] });
+        const user = await UserRepository.findUserById(id);
+        if (user) {
+            res.status(200).json({ user });
         } else {
             res.status(404).json({ error: 'User not found' });
         }
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to retrieve user' });
+        console.error('Failed to retrieve user:', error);
+        res.status(500).json({ error: 'Failed to retrieve user', details: error.message });
     }
 });
 
@@ -148,7 +115,7 @@ router.get('/:id', async (req, res) => {
 router.put('/:id', async (req, res) => {
     const { id } = req.params;
     const { name, phone, profile_picture_url } = req.body;
-    
+
     const phoneRegex = /^\d{10,}$/;
     if (phone !== undefined && phone !== null && !phoneRegex.test(phone)) { // Validate only if phone is provided
         return res.status(400).json({ error: 'Invalid phone number format' });
@@ -164,26 +131,34 @@ router.put('/:id', async (req, res) => {
         return res.status(400).json({ error: 'No fields to update provided' });
     }
 
-    const setClause = Object.keys(updateFields).map(key => `${key} = ?`).join(', ');
-    const values = [...Object.values(updateFields), id];
-
     try {
-        const [result] = await db.query(`UPDATE users SET ${setClause} WHERE id = ?`, values);
+        // Optional: Check if user exists before attempting update
+        const existingUser = await UserRepository.findUserById(id); // Using the simpler findUserById
+        if (!existingUser) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const result = await UserRepository.updateUser(id, updateFields);
         if (result.affectedRows > 0) {
-            const [updatedUserRows] = await db.query('SELECT id, email, name, phone, profile_picture_url, rating, trips_completed, last_login, created_at, updated_at FROM users WHERE id = ?', [id]);
-            res.status(200).json({ message: `User ${id} updated successfully`, user: updatedUserRows[0] });
+            // Fetch the updated user details including role
+            const updatedUser = await UserRepository.findAllUsers(id);
+            res.status(200).json({ message: `User ${id} updated successfully`, user: updatedUser });
         } else {
-            res.status(404).json({ error: 'User not found or no data changed' });
+            // This case implies user was found by the pre-check but update didn't change rows (e.g. data was identical)
+            // or, if pre-check was skipped, user not found by UPDATE.
+            // Given the pre-check, this means no data changed.
+            const currentUser = await UserRepository.findAllUsers(id); // Fetch current state
+            res.status(200).json({ message: 'No data changed for user.', user: currentUser });
         }
     } catch (error) {
         console.error('Failed to update user:', error);
-        res.status(500).json({ error: 'Failed to update user' });
+        res.status(500).json({ error: 'Failed to update user', details: error.message });
     }
 });
 
 // Update user's role by user ID
 router.patch('/:id/role', async (req, res) => {
-    const { id } = req.params;
+    const { id: userId } = req.params; // Renamed for clarity
     const { role_id } = req.body;
 
     if (role_id === undefined) {
@@ -199,37 +174,28 @@ router.patch('/:id/role', async (req, res) => {
         connection = await db.getConnection();
         await connection.beginTransaction();
 
-        // Check if the user exists
-        const [userRows] = await connection.query('SELECT id FROM users WHERE id = ?', [id]);
-        if (userRows.length === 0) {
+        const userExists = await UserRepository.checkUserExistsInTransaction(userId, connection);
+        if (!userExists) {
             await connection.rollback();
             return res.status(404).json({ error: 'User not found' });
         }
 
-        // Check if the role exists
-        const [roleRows] = await connection.query('SELECT id FROM roles WHERE id = ?', [role_id]);
-        if (roleRows.length === 0) {
+        const roleExists = await UserRepository.checkRoleExistsInTransaction(role_id, connection);
+        if (!roleExists) {
             await connection.rollback();
             return res.status(400).json({ error: `Invalid role_id: Role with id ${role_id} does not exist.` });
         }
 
-        // Update or insert into user_roles table
-        // Use REPLACE INTO to handle cases where the user already has a role
-        await connection.query(
-            'REPLACE INTO user_roles (user_id, role_id) VALUES (?, ?)',
-            [id, role_id]
-        );
-
+        await UserRepository.replaceUserRoleInTransaction(userId, role_id, connection);
         await connection.commit();
 
         res.status(200).json({ message: `User ${id} role updated successfully to role_id ${role_id}` });
-
     } catch (error) {
         if (connection) {
             await connection.rollback();
         }
         console.error('Failed to update user role:', error);
-        res.status(500).json({ error: 'Failed to update user' });
+        res.status(500).json({ error: 'Failed to update user role', details: error.message });
     } finally {
         if (connection) {
             connection.release();
@@ -242,18 +208,28 @@ router.patch('/:id/role', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     const { id } = req.params;
     try {
-        const [result] = await db.query('DELETE FROM users WHERE id = ?', [id]);
+        // Optional: Check if user exists before attempting delete
+        const existingUser = await UserRepository.findUserById(id);
+        if (!existingUser) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const result = await UserRepository.deleteUser(id);
+        // The pre-check ensures result.affectedRows should be > 0 if user existed.
+        // If no pre-check, then result.affectedRows === 0 means user not found.
         if (result.affectedRows > 0) {
             res.status(200).json({ message: `User ${id} deleted successfully` });
         } else {
+            // This path should ideally not be hit if the pre-check is done.
             res.status(404).json({ error: 'User not found' });
         }
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to delete user' });
+        console.error('Failed to delete user:', error);
+        if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+            return res.status(409).json({ error: 'Cannot delete user. They are referenced in other parts of the system.' });
+        }
+        res.status(500).json({ error: 'Failed to delete user', details: error.message });
     }
 });
-
-
 
 module.exports = router;
