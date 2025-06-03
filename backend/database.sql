@@ -1,7 +1,7 @@
-DROP SCHEMA IF EXISTS cargo_conect ;
+DROP SCHEMA IF EXISTS cargo_connect ;
 
-CREATE DATABASE IF NOT EXISTS cargo_conect;
-USE cargo_conect;
+CREATE DATABASE IF NOT EXISTS cargo_connect;
+USE cargo_connect;
 
 CREATE TABLE roles (
     id TINYINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
