@@ -9,11 +9,12 @@ const rolesRoutes = require('./roles.js');
 const vehicleTypesRoutes = require('./VehicleTypes/VehicleTypesController.js');
 const userVehiclesRoutes = require('./UsersVehicle/UserVehicleController.js');
 const shipmentRoutes = require('./Shipments/ShipmentController.js');
-const shipmentOfferRoutes = require('./ShipmentOffers/ShipmentOfferController.js'); 
+const shipmentOfferRoutes = require('./ShipmentOffers/ShipmentOfferController.js');
 const shipmentContractRoutes = require('./ShipmentContracts/ShipmentContractController.js');
 const shipmentStatusUpdateRoutes = require('./ShipmentStatusUpdate/ShipmentStatusUpdateController.js');
 const notificationRoutes = require('./Notifications/NotificationsController.js');
 const companyContactRoutes = require('./CompanyContact/CompanyContactController.js');
+const userReviewsRoutes = require('./UserReviews/UserReviewsController.js'); 
 
 // =========================================================================
 // ROTAS PÚBLICAS DE AUTENTICAÇÃO
@@ -36,6 +37,7 @@ router.use('/shipment_offers', shipmentOfferRoutes);
 router.use('/shipment_contracts', shipmentContractRoutes);
 router.use('/shipment-status-updates', shipmentStatusUpdateRoutes);
 router.use('/notifications', notificationRoutes);
-router.use('/company-contact', companyContactRoutes); 
+router.use('/company-contact', companyContactRoutes);
+router.use('/user-reviews', userReviewsRoutes); 
 
 module.exports = router;
