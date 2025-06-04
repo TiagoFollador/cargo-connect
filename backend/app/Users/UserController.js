@@ -2,7 +2,9 @@ const express = require('express');
 const router = express.Router();
 const db = require('../../db.js');
 const bcrypt = require('bcrypt');
-const UserRepository = require('./UserRepository'); // Import the new repository
+const UserRepository = require('./UserRepository'); 
+const { authenticateToken } = require('../Auth/AuthMiddleware'); 
+
 
 // Create a new user
 router.post('/', async (req, res) => {
@@ -110,6 +112,22 @@ router.get('/:id', async (req, res) => {
         res.status(500).json({ error: 'Failed to retrieve user', details: error.message });
     }
 });
+
+router.get('/profile', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.userId; // Assuming userId is in the JWT payload
+        const profile = await UserRepository.getUserProfile(userId);
+        if (!profile) {
+            return res.status(404).json({ error: 'User profile not found.' });
+        }
+        res.status(200).json(profile);
+    } catch (error) {
+        console.error('Error fetching user profile for dashboard:', error);
+        res.status(500).json({ error: 'Failed to fetch user profile.', details: error.message });
+    }
+});
+
+
 
 // Update a user by ID
 router.put('/:id', async (req, res) => {

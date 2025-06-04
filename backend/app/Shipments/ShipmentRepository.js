@@ -283,3 +283,143 @@ exports.deleteShipment = async (req, res) => {
         res.status(500).json({ error: 'Failed to delete shipment', details: error.message });
     }
 };
+
+/**
+ * Searches for shipments based on various filter criteria with pagination.
+ * Includes shipper information and cargo type name.
+ */
+exports.searchShipments = async (filters) => {
+    const {
+        cargoTypeId,
+        origin,
+        destination,
+        vehicleTypeId,
+        minPriceOffer,
+        maxPriceOffer,
+        page = 1, // Default to page 1
+        limit = 10 // Default to 10 items per page
+    } = filters;
+
+    let query = `
+        SELECT
+            s.id AS shipmentId,
+            s.title,
+            s.pickup_location AS origin,
+            s.delivery_location AS destination,
+            s.price_offer AS priceOffer,
+            ct.name AS cargoType,
+            s.pickup_date AS pickupDate,
+            s.delivery_date AS deliveryDate,
+            s.status AS shipmentStatus,
+            u.id AS shipperUserId,
+            u.name AS shipperName,
+            u.rating AS shipperRating,
+            u.trips_completed AS shipperTripsCompleted,
+            u.profile_picture_url AS shipperProfilePictureUrl
+        FROM shipments s
+        JOIN users u ON s.user_id = u.id
+        JOIN cargo_types ct ON s.cargo_type_id = ct.id
+    `;
+
+    const conditions = [];
+    const params = [];
+
+    // Only show shipments that are 'pending' (available for offers)
+    conditions.push("s.status = 'pending'");
+
+    if (cargoTypeId) {
+        conditions.push('s.cargo_type_id = ?');
+        params.push(parseInt(cargoTypeId, 10));
+    }
+    if (origin) {
+        conditions.push('s.pickup_location LIKE ?');
+        params.push(`%${origin}%`);
+    }
+    if (destination) {
+        conditions.push('s.delivery_location LIKE ?');
+        params.push(`%${destination}%`);
+    }
+    if (vehicleTypeId) {
+        conditions.push('s.required_vehicle_type_id = ?');
+        params.push(parseInt(vehicleTypeId, 10));
+    }
+    if (minPriceOffer) {
+        conditions.push('s.price_offer >= ?');
+        params.push(parseFloat(minPriceOffer));
+    }
+    if (maxPriceOffer) {
+        conditions.push('s.price_offer <= ?');
+        params.push(parseFloat(maxPriceOffer));
+    }
+
+    if (conditions.length > 0) {
+        query += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    query += ' ORDER BY s.created_at DESC'; // Or other relevant ordering
+
+    // For pagination
+    const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+    query += ' LIMIT ? OFFSET ?';
+    params.push(parseInt(limit, 10), offset);
+
+    const [shipments] = await db.query(query, params);
+
+    // We would also need a count query for total pages, but for simplicity,
+    // we'll return just the shipments for now.
+    // A full implementation would run a similar query with COUNT(*)
+    return shipments;
+};
+
+/**
+ * Retrieves detailed information for a single shipment by its ID.
+ * Includes shipper info, cargo type details, and vehicle type details.
+ */
+exports.getShipmentDetailsById = async (shipmentId) => {
+    const query = `
+        SELECT
+            s.id AS shipmentId,
+            s.title,
+            s.description,
+            ct.id AS cargoTypeId,
+            ct.name AS cargoTypeName,
+            ct.description AS cargoTypeDescription,
+            s.weight_kg AS weightKg,
+            s.volume_m3 AS volumeM3,
+            s.pickup_location AS pickupLocation,
+            s.pickup_latitude AS pickupLatitude,
+            s.pickup_longitude AS pickupLongitude,
+            s.pickup_date AS pickupDate,
+            s.delivery_location AS deliveryLocation,
+            s.delivery_latitude AS deliveryLatitude,
+            s.delivery_longitude AS deliveryLongitude,
+            s.delivery_date AS deliveryDate,
+            vt.id AS vehicleTypeId,
+            vt.name AS vehicleTypeName,
+            s.price_offer AS priceOffer,
+            s.status,
+            u.id AS shipperUserId,
+            u.name AS shipperName,
+            u.rating AS shipperRating,
+            u.trips_completed AS shipperTripsCompleted,
+            u.profile_picture_url AS shipperProfilePictureUrl,
+            s.created_at AS createdAt,
+            s.updated_at AS updatedAt
+        FROM shipments s
+        JOIN users u ON s.user_id = u.id
+        JOIN cargo_types ct ON s.cargo_type_id = ct.id
+        LEFT JOIN vehicle_types vt ON s.required_vehicle_type_id = vt.id
+        WHERE s.id = ?;
+    `;
+    try {
+        const [rows] = await db.query(query, [shipmentId]);
+        if (rows.length > 0) {
+            return rows[0];
+        }
+        return null; // Shipment not found
+    } catch (error) {
+        console.error(`Error fetching shipment details for ID ${shipmentId} in repository:`, error);
+        throw error; // Re-throw to be handled by the controller
+    }
+};
+

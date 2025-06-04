@@ -14,13 +14,17 @@ const shipmentContractRoutes = require('./ShipmentContracts/ShipmentContractCont
 const shipmentStatusUpdateRoutes = require('./ShipmentStatusUpdate/ShipmentStatusUpdateController.js');
 const notificationRoutes = require('./Notifications/NotificationsController.js');
 const companyContactRoutes = require('./CompanyContact/CompanyContactController.js');
-const userReviewsRoutes = require('./UserReviews/UserReviewsController.js'); 
+const userReviewsRoutes = require('./UserReviews/UserReviewsController.js');
+const landingPageRoutes = require('./LandingPage/LandingPageController.js');
+const dashboardRoutes = require('./Dashboard/DashboardController.js'); 
 
 // =========================================================================
-// ROTAS PÚBLICAS DE AUTENTICAÇÃO
+// ROTAS PÚBLICAS
 // =========================================================================
+
 router.post('/auth/register', authController.register);
 router.post('/auth/login', authController.login);
+router.use('/landingpage', landingPageRoutes);
 
 router.use(authenticateToken);
 
@@ -38,6 +42,7 @@ router.use('/shipment_contracts', shipmentContractRoutes);
 router.use('/shipment-status-updates', shipmentStatusUpdateRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/company-contact', companyContactRoutes);
-router.use('/user-reviews', userReviewsRoutes); 
+router.use('/user-reviews', userReviewsRoutes);
+router.use('/dashboard', dashboardRoutes); 
 
 module.exports = router;

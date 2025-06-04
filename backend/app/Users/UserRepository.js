@@ -80,11 +80,52 @@ const deleteUser = async (userId) => {
     return result;
 };
 
+const getUserProfile = async (userId) => {
+    const userQuery = `
+        SELECT
+            u.id AS userId,
+            u.name,
+            u.email,
+            u.profile_picture_url AS profilePictureUrl,
+            u.rating,
+            u.trips_completed AS tripsCompleted
+        FROM users u
+        WHERE u.id = ?;
+    `;
+
+    const rolesQuery = `
+        SELECT r.name FROM roles r
+        JOIN user_roles ur ON r.id = ur.role_id
+        WHERE ur.user_id = ?;
+    `;
+
+    const notificationsQuery = `
+        SELECT COUNT(*) AS unreadCount
+        FROM notifications
+        WHERE user_id = ? AND is_read = FALSE;
+    `;
+
+    const [userRows] = await db.query(userQuery, [userId]);
+    if (userRows.length === 0) return null;
+
+    const [roleRows] = await db.query(rolesQuery, [userId]);
+    const [notificationRows] = await db.query(notificationsQuery, [userId]);
+
+    return {
+        ...userRows[0],
+        roles: roleRows.map(r => r.name),
+        notificationsCount: notificationRows[0].unreadCount
+    };
+};
+
+
+
 module.exports = {
     createUserInTransaction,
     assignRoleInTransaction,
     findAllUsers,
     findUserById,
+    getUserProfile,
     updateUser,
     checkUserExistsInTransaction,
     checkRoleExistsInTransaction,

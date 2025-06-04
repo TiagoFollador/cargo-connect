@@ -70,12 +70,28 @@ exports.createCompanyContact = async (req, res) => {
  */
 exports.getAllCompanyContacts = async (req, res) => {
     try {
-        // Add filters here if needed in the future (e.g., by email, phone)
-        const [contacts] = await db.query('SELECT * FROM company_contact ORDER BY id ASC'); // Order by ID or created_at
+        const [contacts] = await db.query('SELECT * FROM company_contact ORDER BY id ASC');
         res.status(200).json(contacts);
     } catch (error) {
         console.error('Failed to retrieve company contacts:', error);
         res.status(500).json({ error: 'Failed to retrieve company contacts', details: error.message });
+    }
+};
+
+/**
+ * Retrieves the primary company contact details.
+ * Assumes the first entry is the primary one.
+ */
+exports.getPrimaryCompanyContact = async () => {
+    try {
+        const [contacts] = await db.query('SELECT address, phone, email, working_hours, latitude, longitude FROM company_contact ORDER BY id ASC LIMIT 1');
+        if (contacts.length > 0) {
+            return contacts[0];
+        }
+        return null;
+    } catch (error) {
+        console.error('Failed to retrieve primary company contact:', error);
+        throw error;
     }
 };
 
