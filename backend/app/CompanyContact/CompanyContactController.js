@@ -8,7 +8,7 @@ router.post('/', companyContactRepository.createCompanyContact);
 // GET /api/company-contact
 router.get('/', async (req, res) => {
     try {
-        const contactDetails = await companyContactRepository.getPrimaryCompanyContact();
+        const contactDetails = await companyContactRepository.getAllCompanyContacts();
         if (contactDetails) {
             res.status(200).json(contactDetails);
         } else {
