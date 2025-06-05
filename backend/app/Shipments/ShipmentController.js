@@ -8,8 +8,8 @@ router.post('/', shipmentRepository.createShipment);
 // Search for shipments (from previous feature)
 router.get('/search', async (req, res) => {
     try {
-        const shipmentsData = await shipmentRepository.searchShipments(req.query);
-        const response = shipmentsData.map(shipment => ({
+        const {shipments, page, limit} = await shipmentRepository.searchShipments(req.query);
+        const shipmentData = shipments.map(shipment => ({
             shipmentId: shipment.shipmentId,
             title: shipment.title,
             origin: shipment.origin,
@@ -26,6 +26,11 @@ router.get('/search', async (req, res) => {
                 profilePictureUrl: shipment.shipperProfilePictureUrl
             }
         }));
+        const response = {
+            shipments: shipmentData,
+            page,
+            limit
+        }
         res.status(200).json(response);
     } catch (error) {
         console.error('Error searching shipments:', error);

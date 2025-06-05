@@ -368,7 +368,7 @@ exports.searchShipments = async (filters) => {
     // We would also need a count query for total pages, but for simplicity,
     // we'll return just the shipments for now.
     // A full implementation would run a similar query with COUNT(*)
-    return shipments;
+    return {shipments, page, limit};
 };
 
 /**
