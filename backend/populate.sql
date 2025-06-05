@@ -4,11 +4,11 @@ INSERT INTO roles (name, description) VALUES
 ('administrador', 'Administrador com acesso completo ao sistema');
 
 INSERT INTO users (email, password, name, phone, profile_picture_url) VALUES 
-('lucas@email.com', 'senha_hash', 'Lucas', '41999910001', NULL),
-('renan@email.com', 'senha_hash', 'Renan', '41999910002', NULL),
-('tiago@email.com', 'senha_hash', 'Tiago', '41999910003', NULL),
-('victor@email.com', 'senha_hash', 'Victor', '41999910004', NULL),
-('felipe@email.com', 'senha_hash', 'Felipe', '41999910005', NULL);
+('lucas@email.com', '$2b$10$QekN4CbPogqhY8fYAiORluyrYwe3ohIN1t34.p9HRHLWAAZ00w90C', 'Lucas', '41999910001', NULL),
+('renan@email.com', '$2b$10$QekN4CbPogqhY8fYAiORluyrYwe3ohIN1t34.p9HRHLWAAZ00w90C', 'Renan', '41999910002', NULL),
+('tiago@email.com', '$2b$10$QekN4CbPogqhY8fYAiORluyrYwe3ohIN1t34.p9HRHLWAAZ00w90C', 'Tiago', '41999910003', NULL),
+('victor@email.com', '$2b$10$QekN4CbPogqhY8fYAiORluyrYwe3ohIN1t34.p9HRHLWAAZ00w90C', 'Victor', '41999910004', NULL),
+('felipe@email.com', '$2b$10$QekN4CbPogqhY8fYAiORluyrYwe3ohIN1t34.p9HRHLWAAZ00w90C', 'Felipe', '41999910005', NULL);
 
 INSERT INTO user_roles (user_id, role_id) VALUES 
 (1, 1), 
