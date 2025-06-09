@@ -2,10 +2,8 @@ const express = require('express');
 const router = express.Router();
 const companyContactRepository = require('./CompanyContactRepository');
 
-// POST /api/company-contact
 router.post('/', companyContactRepository.createCompanyContact);
  
-// GET /api/company-contact
 router.get('/', async (req, res) => {
     try {
         const contactDetails = await companyContactRepository.getAllCompanyContacts();
@@ -19,13 +17,10 @@ router.get('/', async (req, res) => {
     }
 });
 
-// GET /api/company-contact/:id
 router.get('/:id', companyContactRepository.getCompanyContactById);
 
-// PUT /api/company-contact/:id
 router.put('/:id', companyContactRepository.updateCompanyContact);
 
-// DELETE /api/company-contact/:id
 router.delete('/:id', companyContactRepository.deleteCompanyContact);
 
 module.exports = router;

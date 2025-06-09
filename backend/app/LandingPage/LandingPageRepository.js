@@ -1,13 +1,6 @@
 const db = require('../../db.js');
 
-/**
- * Retrieves testimonials for the landing page.
- * Fetches reviews with comments, ordered by rating and creation date.
- * Tries to determine the role of the reviewed user.
- * @param {number} limit - The maximum number of testimonials to return.
- * @returns {Promise<Array<object>>} - A promise that resolves to an array of testimonials.
- */
-exports.getTestimonials = async (limit = 5) => { // Default limit to 5
+exports.getTestimonials = async (limit = 5) => { 
     const query = `
         SELECT
             ur.id AS reviewId,

@@ -1,7 +1,7 @@
-// Tipos de papéis de usuário no sistema
+
 export type UserRole = 'conductor' | 'transporter';
 
-// Interface que define a estrutura de um usuário
+
 export interface User {
   id: string;
   name: string;
@@ -13,7 +13,7 @@ export interface User {
   verified: boolean;
 }
 
-// Interface que define a estrutura de uma viagem
+
 export interface Trip {
   id: string;
   origin: string;
@@ -29,7 +29,7 @@ export interface Trip {
   conductorId?: string;
 }
 
-// Interface que define a estrutura de uma contraproposta
+
 export interface CounterOffer {
   tripId: string;
   originalPrice: number;
@@ -37,11 +37,56 @@ export interface CounterOffer {
   message?: string;
 }
 
-// Interface que define a estrutura de um veículo
+
 export interface Vehicle {
   id: string;
   type: string;
   plate: string;
   capacity: string;
   year: number;
+  status: 'active' | 'in_transit' | 'maintenance';
+  location?: string;
+}
+
+export interface DashboardStats {
+  revenue: number;
+  activeVehicles: number;
+  rating: number;
+  completedTrips: number;
+}
+
+export interface ActiveTrip {
+  id: string;
+  route: string;
+  date: string;
+  price: number;
+  status: 'in_progress';
+}
+
+export interface CargoType {
+  id: number;
+  name: string;
+  description?: string;
+  requires_special_handling?: boolean;
+}
+
+export interface VehicleType {
+  id: number;
+  name: string;
+  description?: string;
+  capacity_kg?: number;
+}
+
+export interface CreateTripForm {
+  title: string;
+  description?: string;
+  cargo_type_id: number;
+  weight_kg: number;
+  volume_m3?: number;
+  pickup_location: string;
+  pickup_date: string;
+  delivery_location: string;
+  delivery_date: string;
+  required_vehicle_type_id?: number;
+  price_offer?: number;
 }

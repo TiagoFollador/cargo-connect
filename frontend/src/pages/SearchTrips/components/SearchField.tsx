@@ -1,16 +1,20 @@
-import React, { useState } from 'react';
-import { 
+import React, { useState, useEffect } from "react";
+import {
   Autocomplete,
   TextField,
   Button,
   Slider,
   Box,
-  Typography
-} from '@mui/material';
+  Typography,
+} from "@mui/material";
+import { utilsService } from "../../../services/utilsService";
 
-
-
-type TripStatus = 'pending' | 'active' | 'in_transit' | 'delivered' | 'cancelled';
+type TripStatus =
+  | "pending"
+  | "active"
+  | "in_transit"
+  | "delivered"
+  | "cancelled";
 
 type Trip = {
   id: number;
@@ -59,30 +63,40 @@ const SearchFilters = ({ trips, setFilteredTrips }: SearchFiltersProps) => {
   const [origin, setOrigin] = useState<string | null>(null);
   const [destination, setDestination] = useState<string | null>(null);
   const [vehicleType, setVehicleType] = useState<VehicleType | null>(null);
-  const [budgetRange, setBudgetRange] = useState<[number, number]>([0, 10000]);
+  const [budgetRange, setBudgetRange] = useState<[number, number]>([0, 3000]);
+  const [cargoTypes, setCargoTypes] = useState<CargoType[]>([]);
+  const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>([]);
+  const [isLoadingFilters, setIsLoadingFilters] = useState(true);
 
-  const cargoTypes: CargoType[] = [
-    { id: 1, name: 'Animais' },
-    { id: 2, name: 'Material de Construção' },
-    { id: 3, name: 'Comida' },
-    { id: 4, name: 'Grãos' },
-    { id: 5, name: 'Móveis' },
-    { id: 6, name: 'Eletrônicos' },
-  ];
+  useEffect(() => {
+    loadFilterData();
+  }, []);
 
-  const vehicleTypes: VehicleType[] = [
-    { id: 1, name: 'Caminhão Baú' },
-    { id: 2, name: 'Carreta' },
-    { id: 3, name: 'Caminhão Aberto' },
-    { id: 4, name: 'Caminhão Frigorífico' },
-    { id: 5, name: 'Van' },
-  ];
+  const loadFilterData = async () => {
+    try {
+      setIsLoadingFilters(true);
+      const [cargoTypesData, vehicleTypesData] = await Promise.all([
+        utilsService.getCargoTypes(),
+        utilsService.getVehicleTypes(),
+      ]);
+      setCargoTypes(cargoTypesData);
+      setVehicleTypes(vehicleTypesData);
+    } catch (error) {
+      console.error("Erro ao carregar dados dos filtros:", error);
+    } finally {
+      setIsLoadingFilters(false);
+    }
+  };
 
-  const origins = Array.from(new Set(trips.map(trip => trip.pickup_location)));
-  const destinations = Array.from(new Set(trips.map(trip => trip.delivery_location)));
+  const origins = Array.from(
+    new Set(trips.map((trip) => trip.pickup_location))
+  );
+  const destinations = Array.from(
+    new Set(trips.map((trip) => trip.delivery_location))
+  );
 
   const handleSearch = () => {
-    const filtered = trips.filter(trip => {
+    const filtered = trips.filter((trip) => {
       return (
         (!cargoType || trip.cargo_type_id === cargoType.id) &&
         (!origin || trip.pickup_location === origin) &&
@@ -96,81 +110,77 @@ const SearchFilters = ({ trips, setFilteredTrips }: SearchFiltersProps) => {
   };
 
   return (
-    <Box sx={{ p: 3, bgcolor: 'background.paper', borderRadius: 1, boxShadow: 1 }}>
-        <div className='grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4'>
-          <Autocomplete
-            options={cargoTypes}
-            getOptionLabel={(option) => option.name}
-            value={cargoType}
-            onChange={(_, newValue) => setCargoType(newValue)}
-            renderInput={(params) => (
-              <TextField {...params} label="Tipo de Carga" variant="outlined" />
-            )}
-            fullWidth
-          />
-          <Autocomplete
-            options={vehicleTypes}
-            getOptionLabel={(option) => option.name}
-            value={vehicleType}
-            onChange={(_, newValue) => setVehicleType(newValue)}
-            renderInput={(params) => (
-              <TextField {...params} label="Tipo de Veículo" variant="outlined" />
-            )}
-            fullWidth
-          />
+    <Box
+      sx={{ p: 3, bgcolor: "background.paper", borderRadius: 1, boxShadow: 1 }}
+    >
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+        <Autocomplete
+          options={cargoTypes}
+          getOptionLabel={(option) => option.name}
+          value={cargoType}
+          onChange={(_, newValue) => setCargoType(newValue)}
+          renderInput={(params) => (
+            <TextField {...params} label="Tipo de Carga" variant="outlined" />
+          )}
+          fullWidth
+        />
+        <Autocomplete
+          options={vehicleTypes}
+          getOptionLabel={(option) => option.name}
+          value={vehicleType}
+          onChange={(_, newValue) => setVehicleType(newValue)}
+          renderInput={(params) => (
+            <TextField {...params} label="Tipo de Veículo" variant="outlined" />
+          )}
+          fullWidth
+        />
 
-          <Autocomplete
-            options={origins}
-            value={origin}
-            onChange={(_, newValue) => setOrigin(newValue)}
-            renderInput={(params) => (
-              <TextField {...params} label="Origem" variant="outlined" />
-            )}
-            fullWidth
-          />
-           
+        <Autocomplete
+          options={origins}
+          value={origin}
+          onChange={(_, newValue) => setOrigin(newValue)}
+          renderInput={(params) => (
+            <TextField {...params} label="Origem" variant="outlined" />
+          )}
+          fullWidth
+        />
 
-          <Autocomplete
-            options={destinations}
-            value={destination}
-            onChange={(_, newValue) => setDestination(newValue)}
-            renderInput={(params) => (
-              <TextField {...params} label="Destino" variant="outlined" />
-            )}
-            fullWidth
-          />
-
-         
-
-
-          
-        </div>
-        <div className=' flex flex-col flex-grow'>
-    
-          <Typography gutterBottom>
-            Orçamento: R${budgetRange[0]} - R${budgetRange[1]}
-          </Typography>
-          <Slider
-            value={budgetRange}
-            onChange={(_, newValue) => setBudgetRange(newValue as [number, number])}
-            valueLabelDisplay="auto"
-            min={0}
-            max={20000}
-            step={100}
-          />
-</div>
-        <div className='flex justify-center'>
-
-<Button
-            variant="contained"
-            color="primary"
-            onClick={handleSearch}
-            size="large"
-            sx={{ px: 5 }}
-          >
-            Pesquisar
-          </Button>
-        </div>
+        <Autocomplete
+          options={destinations}
+          value={destination}
+          onChange={(_, newValue) => setDestination(newValue)}
+          renderInput={(params) => (
+            <TextField {...params} label="Destino" variant="outlined" />
+          )}
+          fullWidth
+        />
+      </div>
+      <div className=" flex flex-col flex-grow">
+        <Typography gutterBottom>
+          Orçamento: R${budgetRange[0]} - R${budgetRange[1]}
+        </Typography>
+        <Slider
+          value={budgetRange}
+          onChange={(_, newValue) =>
+            setBudgetRange(newValue as [number, number])
+          }
+          valueLabelDisplay="auto"
+          min={0}
+          max={3000}
+          step={50}
+        />
+      </div>
+      <div className="flex justify-center">
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleSearch}
+          size="large"
+          sx={{ px: 5 }}
+        >
+          Pesquisar
+        </Button>
+      </div>
     </Box>
   );
 };

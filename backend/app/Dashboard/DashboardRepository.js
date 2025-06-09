@@ -1,11 +1,6 @@
 const db = require('../../db.js');
 
 
-/**
- * Fetches summary data for the shipper dashboard.
- * @param {number} userId - The ID of the shipper.
- * @returns {Promise<object>} - Shipper summary data.
- */
 exports.getShipperSummary = async (userId) => {
     const activeTransportsQuery = `
         SELECT COUNT(*) AS count FROM shipments
@@ -32,13 +27,6 @@ exports.getShipperSummary = async (userId) => {
     };
 };
 
-/**
- * Fetches recent shipments for the shipper dashboard with pagination.
- * Similar to ShipmentRepository.searchShipments but filtered by user_id and ordered.
- * @param {number} userId - The ID of the shipper.
- * @param {object} pagination - Object with page and limit.
- * @returns {Promise<Array<object>>} - Paginated list of recent shipments.
- */
 exports.getShipperRecentShipments = async (userId, { page = 1, limit = 10 }) => {
     const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
     const query = `
@@ -58,20 +46,12 @@ exports.getShipperRecentShipments = async (userId, { page = 1, limit = 10 }) => 
         ORDER BY s.created_at DESC
         LIMIT ? OFFSET ?;
     `;
-    // For a full pagination solution, you'd also need a COUNT(*) query here
-    // to return totalItems and calculate totalPages.
     const [shipments] = await db.query(query, [userId, parseInt(limit, 10), offset]);
-    return shipments.map(s => ({ // Basic transformation, can be expanded
+    return shipments.map(s => ({ 
         ...s,
-        // shipperInfo is not needed here as it's the current user's shipments
     }));
 };
 
-/**
- * Fetches summary data for the carrier dashboard.
- * @param {number} userId - The ID of the carrier.
- * @returns {Promise<object>} - Carrier summary data.
- */
 exports.getCarrierSummary = async (userId) => {
     const activeServicesQuery = `
         SELECT COUNT(sc.id) AS count FROM shipment_contracts sc
@@ -100,12 +80,6 @@ exports.getCarrierSummary = async (userId) => {
     };
 };
 
-/**
- * Fetches recent services (contracted shipments) for the carrier dashboard.
- * @param {number} userId - The ID of the carrier.
- * @param {object} pagination - Object with page and limit.
- * @returns {Promise<Array<object>>} - Paginated list of recent services.
- */
 exports.getCarrierRecentServices = async (userId, { page = 1, limit = 10 }) => {
     const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
     const query = `
@@ -128,17 +102,10 @@ exports.getCarrierRecentServices = async (userId, { page = 1, limit = 10 }) => {
         ORDER BY sc.created_at DESC
         LIMIT ? OFFSET ?;
     `;
-    // Add COUNT(*) for full pagination
     const [services] = await db.query(query, [userId, parseInt(limit, 10), offset]);
     return services;
 };
 
-/**
- * Fetches offers made by the carrier with pagination and status filter.
- * @param {number} userId - The ID of the carrier.
- * @param {object} filters - Object with status, page, and limit.
- * @returns {Promise<Array<object>>} - Paginated list of offers.
- */
 exports.getCarrierMyOffers = async (userId, { status, page = 1, limit = 10 }) => {
     const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
     let query = `
@@ -162,21 +129,11 @@ exports.getCarrierMyOffers = async (userId, { status, page = 1, limit = 10 }) =>
     query += ' ORDER BY so.created_at DESC LIMIT ? OFFSET ?;';
     params.push(parseInt(limit, 10), offset);
 
-    // Add COUNT(*) for full pagination
     const [offers] = await db.query(query, params);
     return offers;
 };
 
-/**
- * Fetches revenue data for carrier charts.
- * Example: Monthly revenue.
- * @param {number} userId - The ID of the carrier.
- * @param {object} periodInfo - Object with period, startDate, endDate.
- * @returns {Promise<object>} - Chart data with labels and data points.
- */
 exports.getCarrierRevenueChartData = async (userId, { period = 'monthly', startDate, endDate }) => {
-    // This is a simplified example. Real chart data might need more complex grouping.
-    // For monthly, you'd group by YEAR(sc.created_at), MONTH(sc.created_at)
     const query = `
         SELECT DATE_FORMAT(sc.created_at, '%Y-%m') AS month, SUM(sc.final_price) AS totalRevenue
         FROM shipment_contracts sc

@@ -1,8 +1,5 @@
 const db = require('../../db.js');
 
-/**
- * Creates a new cargo type.
- */
 exports.createCargoType = async (req, res) => {
     const { name, description } = req.body;
     let { requires_special_handling } = req.body;
@@ -17,7 +14,6 @@ exports.createCargoType = async (req, res) => {
         return res.status(400).json({ error: 'Description cannot exceed 255 characters.' });
     }
 
-    // Validate and normalize requires_special_handling
     if (requires_special_handling !== undefined && typeof requires_special_handling !== 'boolean') {
         if (typeof requires_special_handling === 'string') {
             if (requires_special_handling.toLowerCase() === 'true') {
@@ -31,7 +27,7 @@ exports.createCargoType = async (req, res) => {
             return res.status(400).json({ error: 'requires_special_handling must be a boolean.' });
         }
     } else if (requires_special_handling === undefined) {
-        requires_special_handling = false; // Default value
+        requires_special_handling = false; 
     }
 
     try {
@@ -49,9 +45,6 @@ exports.createCargoType = async (req, res) => {
     }
 };
 
-/**
- * Retrieves all cargo types.
- */
 exports.getAllCargoTypes = async (req, res) => {
     try {
         const [types] = await db.query('SELECT id, name, description, requires_special_handling, created_at, updated_at FROM cargo_types');
@@ -62,9 +55,6 @@ exports.getAllCargoTypes = async (req, res) => {
     }
 };
 
-/**
- * Retrieves a single cargo type by its ID.
- */
 exports.getCargoTypeById = async (req, res) => {
     const parsedId = parseInt(req.params.id, 10);
     if (isNaN(parsedId)) {
@@ -84,9 +74,6 @@ exports.getCargoTypeById = async (req, res) => {
     }
 };
 
-/**
- * Updates an existing cargo type.
- */
 exports.updateCargoType = async (req, res) => {
     const parsedId = parseInt(req.params.id, 10);
     if (isNaN(parsedId)) {
@@ -132,9 +119,6 @@ exports.updateCargoType = async (req, res) => {
     }
 };
 
-/**
- * Deletes a cargo type by its ID.
- */
 exports.deleteCargoType = async (req, res) => {
     const parsedId = parseInt(req.params.id, 10);
     if (isNaN(parsedId)) {

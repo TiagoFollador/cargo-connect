@@ -1,4 +1,3 @@
-// c:\codigos\experiencia criativa\cargo-connect\backend\routes\Users\UserRepository.js
 const db = require('../../db.js');
 const bcrypt = require('bcrypt');
 
@@ -44,7 +43,7 @@ const findUserById = async (userId) => {
         WHERE u.id = ?;
     `;
     const [rows] = await db.query(query, [userId]);
-    return rows[0]; // Returns undefined if not found
+    return rows[0]; 
 };
 
 const updateUser = async (userId, updateFields) => {

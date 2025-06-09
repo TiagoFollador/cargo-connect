@@ -1,8 +1,5 @@
-const db = require('../../db.js'); // Your database connection module
+const db = require('../../db.js'); 
 
-/**
- * Creates a new vehicle type.
- */
 exports.createVehicleType = async (req, res) => {
     const { name, description } = req.body;
     let { capacity_kg } = req.body;
@@ -40,22 +37,16 @@ exports.createVehicleType = async (req, res) => {
     }
 };
 
-/**
- * Retrieves all vehicle types.
- */
 exports.getAllVehicleTypes = async (req, res) => {
     try {
         const [types] = await db.query('SELECT id, name, description, capacity_kg, created_at, updated_at FROM vehicle_types');
-        res.status(200).json(types); // Send the array directly
+        res.status(200).json(types); 
     } catch (error) {
         console.error('Failed to retrieve vehicle types:', error);
         res.status(500).json({ error: 'Failed to retrieve vehicle types', details: error.message });
     }
 };
 
-/**
- * Retrieves a single vehicle type by ID.
- */
 exports.getVehicleTypeById = async (req, res) => {
     const parsedId = parseInt(req.params.id, 10);
     if (isNaN(parsedId)) {
@@ -64,7 +55,7 @@ exports.getVehicleTypeById = async (req, res) => {
     try {
         const [types] = await db.query('SELECT id, name, description, capacity_kg, created_at, updated_at FROM vehicle_types WHERE id = ?', [parsedId]);
         if (types.length > 0) {
-            res.status(200).json(types[0]); // Send the object directly
+            res.status(200).json(types[0]); 
         } else {
             res.status(404).json({ error: 'Vehicle type not found' });
         }
@@ -74,9 +65,6 @@ exports.getVehicleTypeById = async (req, res) => {
     }
 };
 
-/**
- * Updates an existing vehicle type.
- */
 exports.updateVehicleType = async (req, res) => {
     const parsedId = parseInt(req.params.id, 10);
     if (isNaN(parsedId)) {
@@ -116,9 +104,6 @@ exports.updateVehicleType = async (req, res) => {
     }
 };
 
-/**
- * Deletes a vehicle type by its ID.
- */
 exports.deleteVehicleType = async (req, res) => {
     const parsedId = parseInt(req.params.id, 10);
     if (isNaN(parsedId)) {

@@ -1,4 +1,4 @@
-import { Calendar, MapPin, Package, DollarSign, TruckIcon } from 'lucide-react';
+import { Calendar, MapPin, Package, DollarSign, TruckIcon } from "lucide-react";
 
 interface TripCardProps {
   trip: Trip;
@@ -7,36 +7,40 @@ interface TripCardProps {
 }
 
 export function TripCard({ trip, onAccept, onCounterOffer }: TripCardProps) {
-  // Format date
-  const formattedDate = new Date(trip.pickup_date).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
+  const formattedDate = new Date(trip.pickup_date).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   });
 
-  // Format price
-  const formattedPrice = trip.price_offer?.toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  }) || 'Preço a combinar';
+  const formattedPrice =
+    trip.price_offer?.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }) || "Preço a combinar";
 
-  // Mock distance calculation (you would replace with real calculation)
-  const distance = "500 km"; 
+  const distance = "500 km";
 
-  // Get cargo type name (would come from your cargoTypes data)
-  const cargoType = getCargoTypeName(trip.cargo_type_id); 
+  const cargoType = getCargoTypeName(trip.cargo_type_id);
 
   return (
     <div className="card group hover:shadow-md overflow-hidden slide-up">
-      <div className={`absolute right-4 top-4 rounded-full bg-white/90 px-2 py-1 text-xs font-medium ${
-        trip.status === 'pending' ? 'text-primary' : 'text-success'
-      } shadow-sm`}>
-        {trip.status === 'pending' ? 'Disponível' : 
-         trip.status === 'active' ? 'Aceito' :
-         trip.status === 'in_transit' ? 'Em trânsito' :
-         trip.status === 'delivered' ? 'Entregue' : 'Cancelado'}
+      <div
+        className={`absolute right-4 top-4 rounded-full bg-white/90 px-2 py-1 text-xs font-medium ${
+          trip.status === "pending" ? "text-primary" : "text-success"
+        } shadow-sm`}
+      >
+        {trip.status === "pending"
+          ? "Disponível"
+          : trip.status === "active"
+            ? "Aceito"
+            : trip.status === "in_transit"
+              ? "Em trânsito"
+              : trip.status === "delivered"
+                ? "Entregue"
+                : "Cancelado"}
       </div>
-      
+
       <div className="mb-4 flex items-center justify-between">
         <div className="space-y-1">
           <div className="flex items-center text-sm text-text-secondary">
@@ -54,7 +58,9 @@ export function TripCard({ trip, onAccept, onCounterOffer }: TripCardProps) {
           <MapPin size={18} className="mt-0.5 flex-shrink-0 text-primary" />
           <div>
             <p className="text-sm font-medium">De: {trip.pickup_location}</p>
-            <p className="text-sm font-medium">Para: {trip.delivery_location}</p>
+            <p className="text-sm font-medium">
+              Para: {trip.delivery_location}
+            </p>
             <p className="text-xs text-text-secondary">Distância: {distance}</p>
           </div>
         </div>
@@ -64,7 +70,7 @@ export function TripCard({ trip, onAccept, onCounterOffer }: TripCardProps) {
           <div>
             <p className="text-sm font-medium">{cargoType}</p>
             <p className="text-xs text-text-secondary">
-              Peso: {trip.weight_kg.toLocaleString('pt-BR')} kg
+              Peso: {trip.weight_kg.toLocaleString("pt-BR")} kg
               {trip.volume_m3 && ` • Volume: ${trip.volume_m3} m³`}
             </p>
           </div>
@@ -76,7 +82,7 @@ export function TripCard({ trip, onAccept, onCounterOffer }: TripCardProps) {
         </div>
       </div>
 
-      {trip.status === 'pending' && (
+      {trip.status === "pending" && (
         <div className="flex space-x-2">
           <button
             onClick={() => onAccept?.(trip.id)}
@@ -92,22 +98,29 @@ export function TripCard({ trip, onAccept, onCounterOffer }: TripCardProps) {
           </button>
         </div>
       )}
-      
-      {trip.status !== 'pending' && (
+
+      {trip.status !== "pending" && (
         <div>
           <button
             disabled
             className={`btn w-full ${
-              trip.status === 'active' ? 'bg-success/20 text-success' :
-              trip.status === 'in_transit' ? 'bg-info/20 text-info' :
-              trip.status === 'delivered' ? 'bg-secondary/20 text-secondary' :
-              'bg-error/20 text-error'
+              trip.status === "active"
+                ? "bg-success/20 text-success"
+                : trip.status === "in_transit"
+                  ? "bg-info/20 text-info"
+                  : trip.status === "delivered"
+                    ? "bg-secondary/20 text-secondary"
+                    : "bg-error/20 text-error"
             } cursor-not-allowed`}
           >
             <TruckIcon size={16} className="mr-2" />
-            {trip.status === 'active' ? 'Viagem Aceita' :
-             trip.status === 'in_transit' ? 'Em Trânsito' :
-             trip.status === 'delivered' ? 'Entregue' : 'Cancelada'}
+            {trip.status === "active"
+              ? "Viagem Aceita"
+              : trip.status === "in_transit"
+                ? "Em Trânsito"
+                : trip.status === "delivered"
+                  ? "Entregue"
+                  : "Cancelada"}
           </button>
         </div>
       )}
@@ -115,15 +128,14 @@ export function TripCard({ trip, onAccept, onCounterOffer }: TripCardProps) {
   );
 }
 
-// Helper function (you would replace with your actual data lookup)
 function getCargoTypeName(id: number): string {
   const cargoTypes: Record<number, string> = {
-    1: 'Animais',
-    2: 'Material de Construção',
-    3: 'Comida',
-    4: 'Grãos',
-    5: 'Móveis',
-    6: 'Eletrônicos'
+    1: "Animais",
+    2: "Material de Construção",
+    3: "Comida",
+    4: "Grãos",
+    5: "Móveis",
+    6: "Eletrônicos",
   };
-  return cargoTypes[id] || 'Carga Geral';
+  return cargoTypes[id] || "Carga Geral";
 }

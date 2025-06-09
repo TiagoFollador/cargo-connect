@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db'); // Your database connection module
+const db = require('../db'); 
 
-// Create a new role
 router.post('/', async (req, res) => {
     const { name, description } = req.body;
 
@@ -28,7 +27,6 @@ router.post('/', async (req, res) => {
     }
 });
 
-// Get all roles
 router.get('/', async (req, res) => {
     try {
         const [roles] = await db.query('SELECT id, name, description, created_at, updated_at FROM roles');
@@ -39,7 +37,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Get a single role by ID
 router.get('/:id', async (req, res) => {
     const { id } = req.params;
     try {
@@ -55,12 +52,10 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// Update a role by ID
 router.put('/:id', async (req, res) => {
     const { id } = req.params;
     const { name, description } = req.body;
 
-    // Basic validation (you might want to add more)
     if (!name && !description) {
         return res.status(400).json({ error: 'No fields to update provided.' });
     }
@@ -81,7 +76,6 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// Delete a role by ID
 router.delete('/:id', async (req, res) => {
     const { id } = req.params;
     try {
@@ -93,7 +87,6 @@ router.delete('/:id', async (req, res) => {
         }
     } catch (error) {
         console.error('Failed to delete role:', error);
-        // Handle potential foreign key constraint errors if roles are in use
         if (error.code === 'ER_ROW_IS_REFERENCED_2') {
             return res.status(409).json({ error: 'Cannot delete role. It is currently assigned to one or more users.' });
         }

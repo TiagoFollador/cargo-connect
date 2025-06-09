@@ -2,10 +2,8 @@ const express = require('express');
 const router = express.Router();
 const shipmentRepository = require('./ShipmentRepository');
 
-// Create a new shipment
 router.post('/', shipmentRepository.createShipment);
 
-// Search for shipments (from previous feature)
 router.get('/search', async (req, res) => {
     try {
         const {shipments, page, limit} = await shipmentRepository.searchShipments(req.query);
@@ -38,10 +36,8 @@ router.get('/search', async (req, res) => {
     }
 });
 
-// Get all shipments (with search/filter capabilities)
 router.get('/', shipmentRepository.getAllShipments);
 
-// Get detailed information for a single shipment (New Feature)
 router.get('/:shipmentId/details', async (req, res) => {
     try {
         const shipmentId = parseInt(req.params.shipmentId, 10);
@@ -55,7 +51,6 @@ router.get('/:shipmentId/details', async (req, res) => {
             return res.status(404).json({ error: 'Shipment not found.' });
         }
 
-        // Transform data to match the expected response structure for the modal
         const response = {
             shipmentId: details.shipmentId,
             title: details.title,
@@ -93,18 +88,14 @@ router.get('/:shipmentId/details', async (req, res) => {
         };
         res.status(200).json(response);
     } catch (error) {
-        // Error logging is already done in the repository if it's a DB error
         res.status(500).json({ error: 'Failed to fetch shipment details.', details: error.message });
     }
 });
 
-// Get a single shipment by ID
 router.get('/:id', shipmentRepository.getShipmentById);
 
-// Update a shipment by ID
 router.put('/:id', shipmentRepository.updateShipment);
 
-// Delete a shipment by ID
 router.delete('/:id', shipmentRepository.deleteShipment);
 
 module.exports = router;
