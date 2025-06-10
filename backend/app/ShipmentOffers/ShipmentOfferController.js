@@ -14,6 +14,8 @@ router.get('/user/:userId', shipmentOfferRepository.getOffersByUserId);
 
 router.put('/:id', shipmentOfferRepository.updateShipmentOffer);
 
+router.put('/status/:id', shipmentOfferRepository.updateOfferStatus);
+
 router.delete('/:id', shipmentOfferRepository.deleteShipmentOffer);
 
 module.exports = router;

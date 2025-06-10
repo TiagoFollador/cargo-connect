@@ -17,7 +17,7 @@ exports.createShipmentOffer = async (req, res) => {
     const {
         shipment_id, user_id, vehicle_id, proposed_price,
         proposed_pickup_date, proposed_delivery_date, notes,
-        status = 'pending' 
+        status = 'pending'
     } = req.body;
 
     if (!shipment_id || !user_id || !vehicle_id || proposed_price === undefined) {
@@ -91,7 +91,7 @@ exports.getAllShipmentOffers = async (req, res) => {
         if (conditions.length > 0) {
             query += ' WHERE ' + conditions.join(' AND ');
         }
-        query += ' ORDER BY created_at DESC'; 
+        query += ' ORDER BY created_at DESC';
 
         const [offers] = await db.query(query, params);
         res.status(200).json(offers);
@@ -143,9 +143,9 @@ exports.updateShipmentOffer = async (req, res) => {
         if (typeof proposed_price !== 'number' || proposed_price <= 0) return res.status(400).json({ error: 'proposed_price must be a positive number.' });
         fieldsToUpdate.proposed_price = proposed_price;
     }
-    if (proposed_pickup_date !== undefined) fieldsToUpdate.proposed_pickup_date = proposed_pickup_date; 
-    if (proposed_delivery_date !== undefined) fieldsToUpdate.proposed_delivery_date = proposed_delivery_date; 
-    if (notes !== undefined) fieldsToUpdate.notes = notes; 
+    if (proposed_pickup_date !== undefined) fieldsToUpdate.proposed_pickup_date = proposed_pickup_date;
+    if (proposed_delivery_date !== undefined) fieldsToUpdate.proposed_delivery_date = proposed_delivery_date;
+    if (notes !== undefined) fieldsToUpdate.notes = notes;
     if (status !== undefined) {
         if (!VALID_OFFER_STATUSES.includes(status)) return res.status(400).json({ error: `Invalid status. Must be one of: ${VALID_OFFER_STATUSES.join(', ')}` });
         fieldsToUpdate.status = status;
@@ -175,10 +175,11 @@ exports.updateShipmentOffer = async (req, res) => {
         const [result] = await db.query('UPDATE shipment_offers SET ? WHERE id = ?', [fieldsToUpdate, parsedId]);
 
         if (result.affectedRows > 0) {
+
             const [updatedOffer] = await db.query('SELECT * FROM shipment_offers WHERE id = ?', [parsedId]);
             res.status(200).json(updatedOffer[0]);
         } else {
-            res.status(200).json(existingOffers[0]); 
+            res.status(200).json(existingOffers[0]);
         }
     } catch (error) {
         console.error('Failed to update shipment offer:', error);
@@ -186,6 +187,135 @@ exports.updateShipmentOffer = async (req, res) => {
             return res.status(400).json({ error: 'Invalid foreign key. Ensure shipment, user, and vehicle exist.', details: error.message });
         }
         res.status(500).json({ error: 'Failed to update shipment offer', details: error.message });
+    }
+};
+
+
+exports.updateOfferStatus = async (req, res) => {
+    const offerId = parseInt(req.params.id, 10);
+    const { status, newPrice } = req.body;
+    const actingUserId = req.user.userId;
+
+    if (isNaN(offerId)) return res.status(400).json({ error: 'ID da oferta inválido.' });
+    if (!status || !VALID_OFFER_STATUSES.includes(status)) return res.status(400).json({ error: `Status inválido.` });
+    if (status === 'countered' && (!newPrice || typeof newPrice !== 'number' || newPrice <= 0)) return res.status(400).json({ error: 'Para uma contraproposta, um novo preço válido é obrigatório.' });
+    if (!actingUserId) return res.status(401).json({ error: 'Não autorizado. ID do usuário não encontrado.' });
+
+    const connection = await db.getConnection();
+
+    try {
+        const [offers] = await connection.query(
+            `SELECT
+                so.id as offer_id,
+                so.user_id as carrier_id,
+                so.shipment_id,
+                so.proposed_price,
+                so.status as current_status, 
+                s.title AS shipment_title
+             FROM shipment_offers so 
+             JOIN shipments s ON so.shipment_id = s.id
+             WHERE so.id = ?`,
+            [offerId]
+        );
+
+        if (offers.length === 0) {
+            connection.release();
+            return res.status(404).json({ error: 'Oferta de frete não encontrada.' });
+        }
+        const offerInfo = offers[0];
+        const { carrier_id, shipment_id, proposed_price, current_status, shipment_title } = offerInfo;
+
+        switch (status) {
+            case 'accepted':
+                if (actingUserId !== carrier_id) {
+                    connection.release();
+                    return res.status(403).json({ error: 'Apenas o dono da carga pode aceitar uma oferta.' });
+                }
+                if (current_status !== 'pending') {
+                    connection.release();
+                    return res.status(409).json({ error: `Este frete não pode ser negociado pois seu status é '${shipment_status}'.` });
+                }
+
+                await connection.beginTransaction();
+
+                const contractData = {
+                    shipment_id: shipment_id,
+                    offer_id: offerId,
+                    final_price: proposed_price
+                };
+                const [contractResult] = await connection.query('INSERT INTO shipment_contracts SET ?', contractData);
+                const newContractId = contractResult.insertId;
+
+                await connection.query(
+                    'UPDATE shipments SET status = ?, price_offer = ? WHERE id = ?',
+                    ['active', proposed_price, shipment_id]
+                );
+
+                await connection.query('UPDATE shipments SET status = ? WHERE id = ?', ['active', shipment_id]);
+
+                await connection.query('UPDATE shipment_offers SET status = ?, updated_by = ? WHERE id = ?', ['accepted', actingUserId, offerId]);
+
+
+                await connection.query(
+                    'UPDATE shipment_offers SET status = ? WHERE shipment_id = ? AND id != ?',
+                    ['rejected', shipment_id, offerId]
+                );
+
+                await connection.commit();
+
+                const notificationData = {
+                    user_id: carrier_id,
+                    title: 'Oferta Aceita e Contrato Gerado!',
+                    message: `Sua oferta para o frete "${shipment_title}" foi aceita! Um contrato foi gerado.`,
+                    type: 'offer_accepted',
+                    related_entity_type: 'contract',
+                    related_entity_id: newContractId
+                };
+                await db.query('INSERT INTO notifications SET ?', notificationData);
+
+                const [finalContract] = await db.query('SELECT * FROM shipment_contracts WHERE id = ?', [newContractId]);
+                res.status(201).json({ message: 'Oferta aceita e contrato criado com sucesso!', contract: finalContract[0] });
+
+                break;
+
+            case 'rejected':
+                await connection.query('UPDATE shipment_offers SET status = ?, updated_by = ? WHERE id = ?', ['rejected', actingUserId, offerId]);
+                notificationData = {
+                    user_id: carrier_id,
+                    title: 'Oferta Rejeitada',
+                    message: `Sua oferta para o frete "${shipment_title}" foi rejeitada pelo embarcador ${shipper_name}.`
+                };
+                break;
+
+            case 'countered':
+                await connection.query('UPDATE shipment_offers SET status = ?, proposed_price = ?, updated_by = ? WHERE id = ?', ['countered', newPrice, actingUserId, offerId]);
+                notificationData = {
+                    user_id: carrier_id,
+                    title: 'Você recebeu uma Contraproposta!',
+                    message: `O embarcador ${shipper_name} fez uma contraproposta de R$ ${newPrice.toFixed(2).replace('.', ',')} para o frete "${shipment_title}".`
+                };
+                break;
+
+            case 'withdrawn':
+                if (actingUserId !== carrier_id) return res.status(403).json({ error: 'Apenas quem fez a oferta pode retirá-la.' });
+                await connection.query('UPDATE shipment_offers SET status = ?, updated_by = ? WHERE id = ?', ['withdrawn', actingUserId, offerId]);
+                notificationData = {
+                    user_id: shipper_id,
+                    title: 'Oferta Retirada',
+                    message: `A transportadora ${carrier_name} retirou a oferta que havia feito para o seu frete "${shipment_title}".`
+                };
+                break;
+
+            default:
+                return res.status(400).json({ error: 'Ação para este status não é permitida ou definida.' });
+        }
+
+    } catch (error) {
+        if (connection) await connection.rollback();
+        console.error('Falha na operação com a oferta:', error);
+        res.status(500).json({ error: 'Falha na operação com a oferta', details: error.message });
+    } finally {
+        if (connection) connection.release();
     }
 };
 

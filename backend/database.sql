@@ -194,8 +194,10 @@ CREATE TABLE shipment_offers (
     status ENUM('pending', 'accepted', 'rejected', 'countered', 'withdrawn') DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_by BIGINT UNSIGNED NOT NULL,
     FOREIGN KEY (shipment_id) REFERENCES shipments(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (updated_by) REFERENCES users(id),
     FOREIGN KEY (vehicle_id) REFERENCES user_vehicles(id),
     INDEX idx_offer_status (status)
 );
