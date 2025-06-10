@@ -23,34 +23,53 @@ exports.createShipmentOffer = async (req, res) => {
     if (!shipment_id || !user_id || !vehicle_id || proposed_price === undefined) {
         return res.status(400).json({ error: 'Missing required fields: shipment_id, user_id, vehicle_id, proposed_price are required.' });
     }
-
     if (!VALID_OFFER_STATUSES.includes(status)) {
         return res.status(400).json({ error: `Invalid status. Must be one of: ${VALID_OFFER_STATUSES.join(', ')}` });
     }
-
     if (typeof proposed_price !== 'number' || proposed_price <= 0) {
         return res.status(400).json({ error: 'proposed_price must be a positive number.' });
     }
 
     try {
-        if (!await checkShipmentExists(shipment_id)) {
+        const [shipments] = await db.query('SELECT user_id, title FROM shipments WHERE id = ?', [shipment_id]);
+        if (shipments.length === 0) {
             return res.status(404).json({ error: `Shipment with id ${shipment_id} not found.` });
         }
-        const userExists = await UserRepository.findUserById(user_id);
-        if (!userExists) {
+        const shipmentInfo = shipments[0];
+        const shipperId = shipmentInfo.user_id; 
+        const carrier = await UserRepository.findUserById(user_id);
+        if (!carrier) {
             return res.status(404).json({ error: `User with id ${user_id} not found.` });
         }
+        
         if (!await checkUserVehicleExists(vehicle_id)) {
             return res.status(404).json({ error: `Vehicle with id ${vehicle_id} not found.` });
         }
 
         const offerData = {
             shipment_id, user_id, vehicle_id, proposed_price,
-            proposed_pickup_date, proposed_delivery_date, notes, status
+            proposed_pickup_date, proposed_delivery_date, notes, status,
+            updated_by: req.user.userId
         };
 
         const [result] = await db.query('INSERT INTO shipment_offers SET ?', offerData);
-        res.status(201).json({ id: result.insertId, ...offerData });
+        const newOfferId = result.insertId;
+
+        try {
+            const notificationData = {
+                user_id: shipperId, 
+                title: 'Você recebeu uma nova oferta!',
+                message: `A transportadora ${carrier.name} fez uma oferta de R$ ${proposed_price.toFixed(2).replace('.', ',')} para o seu frete "${shipmentInfo.title}".`,
+                type: 'offer_received',
+                related_entity_type: 'offer',
+                related_entity_id: newOfferId
+            };
+            await db.query('INSERT INTO notifications SET ?', notificationData);
+        } catch (notificationError) {
+            console.error('Falha ao criar notificação, mas a oferta foi criada com sucesso.', notificationError);
+        }
+
+        res.status(201).json({ id: newOfferId, ...offerData });
 
     } catch (error) {
         console.error('Failed to create shipment offer:', error);
@@ -214,7 +233,7 @@ exports.updateOfferStatus = async (req, res) => {
                 s.title AS shipment_title
              FROM shipment_offers so 
              JOIN shipments s ON so.shipment_id = s.id
-             WHERE so.id = ?`,
+             WHERE s.id = ?`,
             [offerId]
         );
 

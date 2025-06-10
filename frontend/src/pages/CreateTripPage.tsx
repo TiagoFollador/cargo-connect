@@ -447,6 +447,9 @@ const CreateTripPage: React.FC = () => {
               <p className="mt-1 text-sm text-text-secondary">
                 Deixe em branco para receber propostas dos transportadores
               </p>
+              <p className="mt-1 text-xs text-text-secondary">
+                *Taxa de 10% será descontado do valor da oferta
+              </p>
             </div>
           </div>
 

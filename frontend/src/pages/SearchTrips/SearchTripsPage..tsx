@@ -3,12 +3,18 @@ import { shipmentService } from "../../services/shipmentService";
 import SearchField from "./components/SearchField";
 import { Trip } from "./type";
 import { TripCard } from "./components/TripCard";
+import CounterOfferModal from "./components/CounterOfferModal"; // Import the new modal
+import shipmentOfferService from "../../services/shipmentOfferService";
 
 const SearchTripsPage = () => {
-  const [trips, setTrips] = useState<any[]>([]);
-  const [filteredTrips, setFilteredTrips] = useState<any[]>([]);
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [filteredTrips, setFilteredTrips] = useState<Trip[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+   const user = localStorage.getItem("user")? JSON.parse(localStorage.getItem("user") || "{}") : null;;
+
+  const [isCounterOfferModalOpen, setIsCounterOfferModalOpen] = useState(false);
+  const [selectedTripForCounterOffer, setSelectedTripForCounterOffer] = useState<Trip | null>(null);
 
   useEffect(() => {
     loadTrips();
@@ -29,6 +35,28 @@ const SearchTripsPage = () => {
       setIsLoading(false);
     }
   };
+
+  const handleOpenCounterOfferModal = (trip: Trip) => {
+    setSelectedTripForCounterOffer(trip);
+    setIsCounterOfferModalOpen(true);
+  };
+
+  const handleCloseCounterOfferModal = () => {
+    setIsCounterOfferModalOpen(false);
+    setSelectedTripForCounterOffer(null);
+  };
+
+  const handleSubmitCounterOffer = (tripId: number, newPrice: number) => {
+    
+    shipmentOfferService.createOffer({
+      shipment_id: tripId,
+  user_id: Number(user.id),
+  vehicle_id: selectedTripForCounterOffer?.required_vehicle_type_id,
+  proposed_price: newPrice,
+    });
+    handleCloseCounterOfferModal(); 
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -76,11 +104,9 @@ const SearchTripsPage = () => {
                 key={trip.id}
                 trip={trip}
                 onAccept={() => {
-                  console.log("Aceitar viagem:", trip.id);
+                      shipmentOfferService.updateStatusShipmentOffer(trip.id,{status: "accepted", newPrice: 0});
                 }}
-                onCounterOffer={() => {
-                  console.log("Contra-oferta para viagem:", trip.id);
-                }}
+                onCounterOffer={() => handleOpenCounterOfferModal(trip)}
               />
             ))}
           </div>
@@ -94,6 +120,13 @@ const SearchTripsPage = () => {
           </div>
         )}
       </div>
+
+      <CounterOfferModal
+        isOpen={isCounterOfferModalOpen}
+        onClose={handleCloseCounterOfferModal}
+        trip={selectedTripForCounterOffer}
+        onSubmit={handleSubmitCounterOffer}
+      />
     </div>
   );
 };

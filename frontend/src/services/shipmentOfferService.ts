@@ -113,25 +113,17 @@ class ShipmentOfferService {
     }
   }
 
-  async acceptOffer(id: number): Promise<ShipmentOffer> {
-    try {
-      const response = await apiService.put<ShipmentOffer>(`/shipment_offers/${id}`, { status: 'accepted' });
+  async updateStatusShipmentOffer (shipmentId: number, payload: {status: 'pending' | 'accepted' | 'rejected' | 'countered' | 'withdrawn', newPrice?: Number}): Promise<any> {
+  try {
+      const response = await apiService.put(`/shipment_offers/status/${shipmentId}`, payload);
       return response;
     } catch (error) {
-      console.error('Erro ao aceitar oferta:', error);
-      throw new Error('Falha ao aceitar oferta. Tente novamente.');
+      console.error('Erro ao atualizar oferta:', error);
+      throw new Error('Falha ao atualizar status da oferta. Tente novamente.');
     }
-  }
+};
 
-  async rejectOffer(id: number): Promise<ShipmentOffer> {
-    try {
-      const response = await apiService.put<ShipmentOffer>(`/shipment_offers/${id}`, { status: 'rejected' });
-      return response;
-    } catch (error) {
-      console.error('Erro ao rejeitar oferta:', error);
-      throw new Error('Falha ao rejeitar oferta. Tente novamente.');
-    }
-  }
+
 }
 
 export const shipmentOfferService = new ShipmentOfferService();
